@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>CHARACTER SELECT v01</title>
+<title>CHARACTER SELECT v1.1</title>
   <!-- PWA / アイコン設定 -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
@@ -906,6 +906,8 @@ function showPreview(char) {
 
   // Art — bg画像（背景あり、cover表示）
   if (char.isRandom) {
+    // ランダム時はステータスタップ無効
+    currentChar = null;
     // ？を描画
     artMain.style.display='none';
     phMain.style.display='block';
@@ -943,7 +945,7 @@ function showPreview(char) {
   setTimeout(() => {
     nameJp.textContent = char.isRandom ? '？？？' : char.jp;
     nameEl.classList.add('show');
-    currentChar = char.isRandom ? null : char;
+    currentChar = char;
   }, 80);
 }
 
