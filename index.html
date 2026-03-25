@@ -909,6 +909,8 @@ function showPreview(char) {
     artMain.style.display='none';
     phMain.style.display='none';
     phMain.style.opacity='0';
+    document.getElementById('char-splash').style.opacity='0';
+    return;
   } else {
     artMain.onerror = () => {
       artMain.style.display='none';
@@ -960,7 +962,8 @@ function onDecide() {
     state.phase='p2';
     state.curIdx = (state.p1.idx + 1) % (CHARS.length - 1); // P1の1つ右から
     applyCarousel(state.curIdx);
-    showPreview(CHARS[state.curIdx]);
+    const nextChar = CHARS[state.curIdx];
+    if (!nextChar.isRandom) showPreview(nextChar);
     updatePhaseUI();
   } else {
     // P2 locked — start intro
@@ -971,6 +974,8 @@ function onDecide() {
 }
 
 function lockP1toMini(char) {
+  if (!char || char.isRandom) return;
+  if (!char.bg) return; // bg画像がない場合も非表示
   const mini = document.getElementById('ph-p1-mini');
   const miniSlot = document.getElementById('slot-p1-mini');
   drawPlaceholder(mini, char, false, true);
