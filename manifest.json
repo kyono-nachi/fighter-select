@@ -2,7 +2,7 @@
   "name": "CHARACTER SELECT",
   "short_name": "CHAR SELECT",
   "description": "格闘ゲームキャラクター選択画面",
-  "start_url": "./fighter-select_v01.html",
+  "start_url": "/fighter-select/",
   "display": "fullscreen",
   "orientation": "portrait",
   "background_color": "#000000",
