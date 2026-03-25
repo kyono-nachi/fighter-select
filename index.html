@@ -906,9 +906,20 @@ function showPreview(char) {
 
   // Art — bg画像（背景あり、cover表示）
   if (char.isRandom) {
+    // ？を描画
     artMain.style.display='none';
-    phMain.style.display='none';
-    phMain.style.opacity='0';
+    phMain.style.display='block';
+    phMain.style.opacity='1';
+    const ctx = phMain.getContext('2d');
+    const W = phMain.width, H = phMain.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#fff';
+    ctx.globalAlpha = 0.12;
+    ctx.font = `bold ${W*.7}px Bebas Neue, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('?', W/2, H/2);
+    ctx.globalAlpha = 1;
     document.getElementById('char-splash').style.opacity='0';
     return;
   } else {
@@ -932,7 +943,7 @@ function showPreview(char) {
   setTimeout(() => {
     nameJp.textContent = char.isRandom ? '？？？' : char.jp;
     nameEl.classList.add('show');
-    currentChar = char;
+    currentChar = char.isRandom ? null : char;
   }, 80);
 }
 
@@ -957,8 +968,9 @@ function onDecide() {
   flash(); playConfirm();
 
   if (ph==='p1') {
-    // P1 locked — shrink to mini, switch to P2
-    lockP1toMini(char);
+    // P1 locked — shrink to mini, switch to P2（ランダム選択時はミニ非表示）
+    const p1selectedRandom = CHARS[state.p1.idx].isRandom;
+    if (!p1selectedRandom) lockP1toMini(char);
     state.phase='p2';
     state.curIdx = (state.p1.idx + 1) % (CHARS.length - 1); // P1の1つ右から
     applyCarousel(state.curIdx);
@@ -974,8 +986,7 @@ function onDecide() {
 }
 
 function lockP1toMini(char) {
-  if (!char || char.isRandom) return;
-  if (!char.bg) return; // bg画像がない場合も非表示
+  if (!char) return;
   const mini = document.getElementById('ph-p1-mini');
   const miniSlot = document.getElementById('slot-p1-mini');
   drawPlaceholder(mini, char, false, true);
