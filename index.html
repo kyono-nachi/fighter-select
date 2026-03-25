@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>CHARACTER SELECT v1.1</title>
+<title>CHARACTER SELECT v2.1</title>
   <!-- PWA / アイコン設定 -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
@@ -405,6 +405,8 @@ html, body {
   display:flex; flex-direction:column; align-items:center;
   transform:translateY(12px);
   transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  overflow:hidden;
+  cursor:grab;
 }
 #status-modal.show #status-modal-inner {
   transform:translateY(0);
@@ -413,7 +415,13 @@ html, body {
   width:100%;
   height:auto;
   display:block;
+  transform-origin:0 0;
+  cursor:grab;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:none;
 }
+#status-modal-img.grabbing { cursor:grabbing; }
 #status-modal-close {
   width:100%;
   padding:12px 0;
@@ -484,7 +492,7 @@ html, body {
 #slash::before {
   content:''; position:absolute; top:-10%; left:47%; width:3px; height:120%;
   background:linear-gradient(180deg,transparent,#fff,var(--gold),#fff,transparent);
-  transform:skewX(-5deg) skewY(-8deg); filter:blur(1px);
+  transform:rotate(45deg); filter:blur(1px);
   box-shadow:0 0 20px 6px rgba(255,190,0,0.4);
 }
 #slash.on { animation:slanim 0.5s forwards; }
@@ -701,10 +709,13 @@ body::after {
 
   <!-- Status Modal -->
   <div id="status-modal">
-    <button id="status-modal-close" onclick="closeStatus()">× CLOSE</button>
+    <div style="display:flex;width:100%;">
+    <button id="status-modal-reset" onclick="resetZoom()" style="flex:1;font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:4px;background:#111;border:none;border-bottom:1px solid #2a2a40;border-right:1px solid #2a2a40;color:var(--gray);cursor:pointer;transition:background 0.15s,color 0.15s;padding:12px 0;" onmouseover="this.style.background='#1a1a2a';this.style.color='#fff'" onmouseout="this.style.background='#111';this.style.color='var(--gray)'">↺ RESET</button>
+    <button id="status-modal-close" onclick="closeStatus()" style="flex:1;">× CLOSE</button>
+  </div>
     <div id="status-modal-inner">
       <img id="status-modal-img" src="" alt="">
-      <div id="status-modal-no-card">STATUS CARD NOT FOUND</div>
+      <div id="status-modal-no-card" style="text-align:center;">It's a secret.<br>COMING SOON.</div>
     </div>
   </div>
 
@@ -1239,7 +1250,128 @@ function openStatus() {
 
 function closeStatus() {
   document.getElementById('status-modal').classList.remove('show');
+  resetZoom();
 }
+
+/* ── ズーム・パン ── */
+const zoomState = { scale:1, x:0, y:0, minScale:1, maxScale:5 };
+let isPanning = false, panStart = {x:0, y:0}, panOrigin = {x:0, y:0};
+let lastPinchDist = 0, lastPinchMid = {x:0, y:0};
+
+function getImg() { return document.getElementById('status-modal-img'); }
+
+function applyTransform() {
+  const img = getImg();
+  img.style.transform = `translate(${zoomState.x}px, ${zoomState.y}px) scale(${zoomState.scale})`;
+}
+
+function resetZoom() {
+  zoomState.scale = 1; zoomState.x = 0; zoomState.y = 0;
+  const img = getImg();
+  if (img) {
+    img.style.transition = 'transform 0.3s ease';
+    applyTransform();
+    setTimeout(() => img.style.transition = '', 300);
+  }
+}
+
+function clampPan() {
+  // 制限なし — 自由にパン可能
+}
+
+function pinchDist(t) {
+  const dx = t[0].clientX - t[1].clientX;
+  const dy = t[0].clientY - t[1].clientY;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+function pinchMid(t) {
+  return { x:(t[0].clientX+t[1].clientX)/2, y:(t[0].clientY+t[1].clientY)/2 };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const img = getImg();
+  if (!img) return;
+
+  // ── マウスホイール（PC拡大縮小） ──
+  img.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.85 : 1.18;
+    zoomState.scale = Math.max(zoomState.minScale, Math.min(zoomState.maxScale, zoomState.scale * delta));
+    clampPan();
+    applyTransform();
+  }, { passive:false });
+
+  // ── マウスドラッグ（PC移動） ──
+  img.addEventListener('mousedown', e => {
+    if (zoomState.scale <= 1) return;
+    isPanning = true;
+    panStart = { x:e.clientX, y:e.clientY };
+    panOrigin = { x:zoomState.x, y:zoomState.y };
+    img.classList.add('grabbing');
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', e => {
+    if (!isPanning) return;
+    zoomState.x = panOrigin.x + (e.clientX - panStart.x);
+    zoomState.y = panOrigin.y + (e.clientY - panStart.y);
+    clampPan();
+    applyTransform();
+  });
+  window.addEventListener('mouseup', () => {
+    isPanning = false;
+    getImg().classList.remove('grabbing');
+  });
+
+  // ── ダブルクリックでリセット ──
+  let lastClick = 0;
+  img.addEventListener('click', () => {
+    const now = Date.now();
+    if (now - lastClick < 300) resetZoom();
+    lastClick = now;
+  });
+
+  // ── タッチ（スマホ） ──
+  img.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      lastPinchDist = pinchDist(e.touches);
+      lastPinchMid  = pinchMid(e.touches);
+    } else if (e.touches.length === 1) {
+      isPanning = true;
+      panStart  = { x:e.touches[0].clientX, y:e.touches[0].clientY };
+      panOrigin = { x:zoomState.x, y:zoomState.y };
+    }
+  }, { passive:false });
+
+  img.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      const dist = pinchDist(e.touches);
+      const mid  = pinchMid(e.touches);
+      const delta = dist / lastPinchDist;
+      zoomState.scale = Math.max(zoomState.minScale, Math.min(zoomState.maxScale, zoomState.scale * delta));
+      lastPinchDist = dist;
+      lastPinchMid  = mid;
+      clampPan();
+      applyTransform();
+    } else if (e.touches.length === 1 && isPanning) {
+      zoomState.x = panOrigin.x + (e.touches[0].clientX - panStart.x);
+      zoomState.y = panOrigin.y + (e.touches[0].clientY - panStart.y);
+      clampPan();
+      applyTransform();
+    }
+  }, { passive:false });
+
+  img.addEventListener('touchend', e => {
+    if (e.touches.length < 2) isPanning = false;
+    // ダブルタップでリセット
+    if (e.changedTouches.length === 1) {
+      const now = Date.now();
+      if (now - lastClick < 300) resetZoom();
+      lastClick = now;
+    }
+  });
+});
 
 // モーダル背景タップで閉じる
 document.addEventListener('DOMContentLoaded', () => {
