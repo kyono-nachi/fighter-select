@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>CHARACTER SELECT v01</title>
+  <!-- PWA / アイコン設定 -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon_32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon_16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="CHAR SELECT">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -423,6 +433,46 @@ html, body {
   padding:40px 0; display:none;
 }
 
+/* ── PRELOAD ── */
+#preload-screen {
+  position:absolute; inset:0; z-index:1000;
+  background:#000;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:20px;
+  transition:opacity 0.6s ease;
+}
+#preload-screen.fade-out {
+  opacity:0; pointer-events:none;
+}
+
+#preload-title {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:13px; letter-spacing:8px;
+  color:#fff; opacity:0.4;
+}
+
+#preload-bar-wrap {
+  width:70%;
+  height:2px;
+  background:#1a1a2a;
+  position:relative;
+  overflow:hidden;
+}
+#preload-bar {
+  height:100%;
+  width:0%;
+  background:linear-gradient(90deg, var(--p1c), var(--gold));
+  transition:width 0.2s ease;
+  box-shadow:0 0 8px var(--p1c);
+}
+
+#preload-pct {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:11px; letter-spacing:4px;
+  color:var(--gray); opacity:0.6;
+}
+
 /* ── OVERLAYS ── */
 #flash    { position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:500; }
 #blackout { position:absolute; inset:0; background:#000; opacity:0; pointer-events:none; z-index:499; transition:opacity 1.3s ease-in; }
@@ -565,6 +615,13 @@ body::after {
 </head>
 <body>
 <div id="page">
+  <!-- Preload Screen -->
+  <div id="preload-screen">
+    <div id="preload-title">NOW LOADING</div>
+    <div id="preload-bar-wrap"><div id="preload-bar"></div></div>
+    <div id="preload-pct">0%</div>
+  </div>
+
   <div id="bg-fx">
     <div id="bg-grid"></div>
     <div id="bg-glow"></div>
@@ -848,20 +905,26 @@ function showPreview(char) {
     `radial-gradient(ellipse at 50% 40%, ${char.color}0d 0%, transparent 65%)`;
 
   // Art — bg画像（背景あり、cover表示）
-  artMain.onerror = () => {
+  if (char.isRandom) {
     artMain.style.display='none';
-    phMain.style.display='block';
-    drawPlaceholder(phMain, char, isP2);
-  };
-  if (char.bg) {
-    artMain.src=char.bg; artMain.style.display='block';
     phMain.style.display='none';
+    phMain.style.opacity='0';
   } else {
-    artMain.style.display='none';
-    phMain.style.display='block';
-    drawPlaceholder(phMain, char, isP2);
+    artMain.onerror = () => {
+      artMain.style.display='none';
+      phMain.style.display='block';
+      drawPlaceholder(phMain, char, isP2);
+    };
+    if (char.bg) {
+      artMain.src=char.bg; artMain.style.display='block';
+      phMain.style.display='none';
+    } else {
+      artMain.style.display='none';
+      phMain.style.display='block';
+      drawPlaceholder(phMain, char, isP2);
+    }
+    phMain.style.opacity='1';
   }
-  phMain.style.opacity='1';
 
   // Name
   setTimeout(() => {
@@ -1182,12 +1245,55 @@ document.getElementById && document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+/* ── Preload ── */
+function preloadAll(onComplete) {
+  // 全キャラの全画像URLを収集
+  const urls = [];
+  CHARS.forEach(ch => {
+    if (ch.isRandom) return;
+    ['face','bg','vs','card'].forEach(key => {
+      if (ch[key]) urls.push(ch[key]);
+    });
+  });
+
+  if (urls.length === 0) { onComplete(); return; }
+
+  let loaded = 0;
+  const total = urls.length;
+
+  const bar = document.getElementById('preload-bar');
+  const pct = document.getElementById('preload-pct');
+
+  function update() {
+    loaded++;
+    const p = Math.round(loaded / total * 100);
+    bar.style.width = p + '%';
+    pct.textContent = p + '%';
+    if (loaded >= total) {
+      setTimeout(onComplete, 300);
+    }
+  }
+
+  urls.forEach(url => {
+    const img = new Image();
+    img.onload  = update;
+    img.onerror = update; // 失敗してもカウントは進める
+    img.src = url;
+  });
+}
+
 /* ── Init ── */
 window.addEventListener('load', () => {
-  applyCarousel(0, false);
-  showPreview(CHARS[0]);
-  updatePhaseUI();
-  document.getElementById('lbl1').classList.add('on');
+  preloadAll(() => {
+    const screen = document.getElementById('preload-screen');
+    screen.classList.add('fade-out');
+    setTimeout(() => { screen.style.display='none'; }, 650);
+
+    applyCarousel(0, false);
+    showPreview(CHARS[0]);
+    updatePhaseUI();
+    document.getElementById('lbl1').classList.add('on');
+  });
 });
 </script>
 </body>
