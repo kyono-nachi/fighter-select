@@ -1,0 +1,126 @@
+{
+  "characters": [
+    {
+      "id": "c1a",
+      "charId": "c1",
+      "jp": "五尺太刀折襟京野",
+      "color": "#50a060",
+      "colorLabel": "A",
+      "face": "image/face_01.png",
+      "bg": "image/bg_01.png",
+      "vs": "image/vs_01.png",
+      "card": "image/card_01.png"
+    },
+    {
+      "id": "c1b",
+      "charId": "c1",
+      "jp": "五尺太刀折襟京野",
+      "color": "#a06020",
+      "colorLabel": "B",
+      "face": "image/face_01b.png",
+      "bg": "image/bg_01b.png",
+      "vs": "image/vs_01b.png",
+      "card": "image/card_01.png"
+    },
+    {
+      "id": "c2a",
+      "charId": "c2",
+      "jp": "擬似双剣奇術幻海",
+      "color": "#6070d0",
+      "colorLabel": "A",
+      "face": "image/face_02.png",
+      "bg": "image/bg_02.png",
+      "vs": "image/vs_02.png",
+      "card": "image/card_02.png"
+    },
+    {
+      "id": "c2b",
+      "charId": "c2",
+      "jp": "擬似双剣奇術幻海",
+      "color": "#d04060",
+      "colorLabel": "B",
+      "face": "image/face_02b.png",
+      "bg": "image/bg_02b.png",
+      "vs": "image/vs_02b.png",
+      "card": "image/card_02.png"
+    },
+    {
+      "id": "c3a",
+      "charId": "c3",
+      "jp": "十字戦槌修道幻海",
+      "color": "#3858a0",
+      "colorLabel": "A",
+      "face": "image/face_03.png",
+      "bg": "image/bg_03.png",
+      "vs": "image/vs_03.png",
+      "card": "image/card_03.png"
+    },
+    {
+      "id": "c3b",
+      "charId": "c3",
+      "jp": "十字戦槌修道幻海",
+      "color": "#a03838",
+      "colorLabel": "B",
+      "face": "image/face_03b.png",
+      "bg": "image/bg_03b.png",
+      "vs": "image/vs_03b.png",
+      "card": "image/card_03.png"
+    },
+    {
+      "id": "c4a",
+      "charId": "c4",
+      "jp": "西洋長剣正装幻海",
+      "color": "#c8b060",
+      "colorLabel": "A",
+      "face": "image/face_04.png",
+      "bg": "image/bg_04.png",
+      "vs": "image/vs_04.png",
+      "card": "image/card_04.png"
+    },
+    {
+      "id": "c4b",
+      "charId": "c4",
+      "jp": "西洋長剣正装幻海",
+      "color": "#60a0c8",
+      "colorLabel": "B",
+      "face": "image/face_04b.png",
+      "bg": "image/bg_04b.png",
+      "vs": "image/vs_04b.png",
+      "card": "image/card_04.png"
+    },
+    {
+      "id": "c5a",
+      "charId": "c5",
+      "jp": "魔導拳鎧接待幻海",
+      "color": "#9090c8",
+      "colorLabel": "A",
+      "face": "image/face_05.png",
+      "bg": "image/bg_05.png",
+      "vs": "image/vs_05.png",
+      "card": "image/card_05.png"
+    },
+    {
+      "id": "c5b",
+      "charId": "c5",
+      "jp": "魔導拳鎧接待幻海",
+      "color": "#c89030",
+      "colorLabel": "B",
+      "face": "image/face_05b.png",
+      "bg": "image/bg_05b.png",
+      "vs": "image/vs_05b.png",
+      "card": "image/card_05.png"
+    },
+    {
+      "id": "rnd",
+      "charId": "rnd",
+      "jp": "ランダム",
+      "color": "#556677",
+      "colorLabel": "",
+      "face": "",
+      "bg": "",
+      "vs": "",
+      "card": "",
+      "isRandom": true
+    }
+  ]
+}

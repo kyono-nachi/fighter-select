@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>CHARACTER SELECT v2.1</title>
+<title>CHARACTER SELECT v2.2</title>
   <!-- PWA / アイコン設定 -->
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/x-icon" href="icons/favicon.ico">
@@ -151,7 +151,7 @@ html, body {
   z-index:1;
 }
 
-/* P1 ghost (lingers left after P1 locks in) */
+/* Main char slot */
 .char-slot {
   position:absolute;
   bottom:0;
@@ -165,19 +165,6 @@ html, body {
 #slot-main {
   width:100%;
   height:100%;
-}
-
-#slot-p1-mini {
-  width:40%;
-  height:60%;
-  left:0;
-  opacity:0;
-  transform:translateX(-20px);
-  filter:grayscale(0.3) brightness(0.7);
-}
-#slot-p1-mini.show {
-  opacity:0.85;
-  transform:translateX(0);
 }
 
 /* Canvas/img inside slot */
@@ -255,11 +242,9 @@ html, body {
   padding:12px 0 16px;
   will-change:transform;
   transition:transform 0.38s cubic-bezier(0.25,1,0.5,1);
-  cursor:grab;
 }
 #carousel-track.dragging {
   transition:none;
-  cursor:grabbing;
 }
 
 /* Individual cards */
@@ -406,7 +391,6 @@ html, body {
   transform:translateY(12px);
   transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
   overflow:hidden;
-  cursor:grab;
 }
 #status-modal.show #status-modal-inner {
   transform:translateY(0);
@@ -416,7 +400,6 @@ html, body {
   height:auto;
   display:block;
   transform-origin:0 0;
-  cursor:grab;
   user-select:none;
   -webkit-user-select:none;
   touch-action:none;
@@ -643,7 +626,7 @@ body::after {
     </div>
     <div class="hdr-center">
       CHARACTER SELECT
-      <div id="hdr-tap-hint">タップでステータス表示</div>
+      <div id="hdr-tap-hint">ダブルタップでステータス表示</div>
     </div>
     <div class="hdr-side right">
       <div class="player-tag p2">2P</div>
@@ -654,11 +637,6 @@ body::after {
   <!-- Character display -->
   <div id="char-display">
     <div id="char-splash"></div>
-
-    <!-- P1 mini (lingers after lock) -->
-    <div class="char-slot" id="slot-p1-mini">
-      <canvas id="ph-p1-mini" width="280" height="520"></canvas>
-    </div>
 
     <!-- Main slot -->
     <div class="char-slot" id="slot-main">
@@ -731,19 +709,31 @@ body::after {
    icon : カルーセル用画像（正方形推奨）
    art  : 立ち絵用PNG（透過推奨、縦長）
    ===================================================== */
-const CHARS = [
-  // 画像は image/ フォルダに配置
-  // face: セレクトカード  1:1   image/face_XX.png
-  // bg  : 立ち絵エリア   3:4   image/bg_XX.png
-  // vs  : VS画面        16:9  image/vs_XX.png
-  // card: ステータスカード     image/card_XX.png
-  { id:'c1', jp:'五尺太刀折襟京野', color:'#50a060', face:'image/face_01.png', bg:'image/bg_01.png', vs:'image/vs_01.png', card:'image/card_01.png' },
-  { id:'c2', jp:'擬似双剣奇術幻海', color:'#6070d0', face:'image/face_02.png', bg:'image/bg_02.png', vs:'image/vs_02.png', card:'image/card_02.png' },
-  { id:'c3', jp:'十字戦槌修道幻海', color:'#3858a0', face:'image/face_03.png', bg:'image/bg_03.png', vs:'image/vs_03.png', card:'image/card_03.png' },
-  { id:'c4', jp:'西洋長剣正装幻海', color:'#c8b060', face:'image/face_04.png', bg:'image/bg_04.png', vs:'image/vs_04.png', card:'image/card_04.png' },
-  { id:'c5', jp:'魔導拳鎧接待幻海', color:'#9090c8', face:'image/face_05.png', bg:'image/bg_05.png', vs:'image/vs_05.png', card:'image/card_05.png' },
-  { id:'rnd', jp:'ランダム', color:'#556677', face:'', bg:'', vs:'', isRandom:true },
+// キャラデータ（フォールバック用インライン定義）
+// chars.json が読み込めた場合はそちらを優先
+const CHARS_DEFAULT = [
+  { id:'c1a', charId:'c1', jp:'五尺太刀折襟京野', color:'#50a060', colorLabel:'A', face:'image/face_01.png', bg:'image/bg_01.png', vs:'image/vs_01.png', card:'image/card_01.png' },
+  { id:'c2a', charId:'c2', jp:'擬似双剣奇術幻海', color:'#6070d0', colorLabel:'A', face:'image/face_02.png', bg:'image/bg_02.png', vs:'image/vs_02.png', card:'image/card_02.png' },
+  { id:'c3a', charId:'c3', jp:'十字戦槌修道幻海', color:'#3858a0', colorLabel:'A', face:'image/face_03.png', bg:'image/bg_03.png', vs:'image/vs_03.png', card:'image/card_03.png' },
+  { id:'c4a', charId:'c4', jp:'西洋長剣正装幻海', color:'#c8b060', colorLabel:'A', face:'image/face_04.png', bg:'image/bg_04.png', vs:'image/vs_04.png', card:'image/card_04.png' },
+  { id:'c5a', charId:'c5', jp:'魔導拳鎧接待幻海', color:'#9090c8', colorLabel:'A', face:'image/face_05.png', bg:'image/bg_05.png', vs:'image/vs_05.png', card:'image/card_05.png' },
+  { id:'rnd',  charId:'rnd', jp:'ランダム', color:'#556677', colorLabel:'', face:'', bg:'', vs:'', card:'', isRandom:true },
 ];
+
+let CHARS = [];
+
+async function loadChars() {
+  try {
+    const res = await fetch('chars.json');
+    if (!res.ok) throw new Error('fetch failed');
+    const data = await res.json();
+    CHARS = data.characters;
+    console.log('chars.json 読み込み成功');
+  } catch(e) {
+    console.warn('chars.json 読み込み失敗、インラインデータを使用:', e);
+    CHARS = CHARS_DEFAULT;
+  }
+}
 
 const KEYS_P1 = { left:'KeyA', right:'KeyD', ok:'Space' };
 const KEYS_P2 = { left:'ArrowLeft', right:'ArrowRight', ok:'Enter' };
@@ -830,30 +820,53 @@ const track = document.getElementById('carousel-track');
 const cardW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--card-w'));
 const gap   = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--gap'));
 
-CHARS.forEach((ch,i) => {
-  const card = document.createElement('div');
-  card.className='c-card'; card.dataset.i=i;
+function buildCarousel() {
+  track.innerHTML = '';
+  CHARS.forEach((ch, i) => {
+    const card  = document.createElement('div');
+    card.className = 'c-card'; card.dataset.i = i;
 
-  const inner=document.createElement('div'); inner.className='c-inner';
-  const pulse=document.createElement('div'); pulse.className='c-pulse';
+    const inner = document.createElement('div'); inner.className = 'c-inner';
+    const pulse = document.createElement('div'); pulse.className = 'c-pulse';
 
-  if (ch.face) {
-    const img=document.createElement('img'); img.className='c-img'; img.src=ch.face; img.alt=ch.jp;
-    img.style.display='block';
-    img.onerror = () => { img.style.display='none'; const cvs=document.createElement('canvas'); cvs.className='c-canvas'; cvs.width=72; cvs.height=72; drawIconPlaceholder(cvs,ch); inner.appendChild(cvs); };
-    inner.appendChild(img);
-  } else {
-    const cvs=document.createElement('canvas'); cvs.className='c-canvas'; cvs.width=72; cvs.height=72;
-    drawIconPlaceholder(cvs,ch); inner.appendChild(cvs);
-  }
+    if (ch.face) {
+      const img = document.createElement('img');
+      img.className = 'c-img'; img.src = ch.face; img.alt = ch.jp;
+      img.style.display = 'block';
+      img.onerror = () => {
+        img.style.display = 'none';
+        const cvs = document.createElement('canvas');
+        cvs.className = 'c-canvas'; cvs.width = 72; cvs.height = 72;
+        drawIconPlaceholder(cvs, ch);
+        inner.appendChild(cvs);
+      };
+      inner.appendChild(img);
+    } else {
+      const cvs = document.createElement('canvas');
+      cvs.className = 'c-canvas'; cvs.width = 72; cvs.height = 72;
+      drawIconPlaceholder(cvs, ch);
+      inner.appendChild(cvs);
+    }
 
+    const b1 = document.createElement('div'); b1.className = 'c-badge p1'; b1.textContent = '✓';
+    const b2 = document.createElement('div'); b2.className = 'c-badge p2'; b2.textContent = '✓';
 
-  const b1=document.createElement('div'); b1.className='c-badge p1'; b1.textContent='✓';
-  const b2=document.createElement('div'); b2.className='c-badge p2'; b2.textContent='✓';
+    card.appendChild(inner); card.appendChild(pulse);
+    card.appendChild(b1); card.appendChild(b2);
+    track.appendChild(card);
 
-  card.appendChild(inner); card.appendChild(pulse); card.appendChild(b1); card.appendChild(b2);
-  track.appendChild(card);
-});
+    card.addEventListener('click', () => {
+      if (state.phase !== 'p1' && state.phase !== 'p2') return;
+      const p = state.phase;
+      const other = p === 'p1' ? state.p2.char : state.p1.char;
+      if (other && CHARS[i] && CHARS[i].id === other.id) return;
+      state[p].cur = i;
+      applyCarousel(i);
+      updatePhaseUI();
+      showPreview(CHARS[i]);
+    });
+  });
+}
 
 /* ── Carousel positioning ── */
 function getContainerW() {
@@ -882,11 +895,20 @@ function applyCarousel(idx, animate=true) {
 }
 
 /* ── Move cursor ── */
-function moveTo(idx, preview=true) {
-  idx = Math.max(0, Math.min(CHARS.length-1, idx));
+function moveTo(idx, preview=true, dir=0) {
+  const len = CHARS.length;
+  // ループ（端を超えたら反対側へ）
+  idx = ((idx % len) + len) % len;
+  // P2フェーズ: P1が通常キャラ選択時のみ同じカードをスキップ（ランダム選択時はスキップなし）
+  if (state.phase === 'p2' && state.p1.char && !CHARS[state.p1.idx].isRandom) {
+    let tries = 0;
+    while (tries < len && CHARS[idx] && CHARS[idx].id === state.p1.char.id) {
+      idx = ((idx + (dir >= 0 ? 1 : -1)) % len + len) % len;
+      tries++;
+    }
+  }
   state.curIdx = idx;
   applyCarousel(idx);
-  playTick();
   if (preview && state.phase !== 'intro') showPreview(CHARS[idx]);
 }
 
@@ -896,7 +918,6 @@ function showPreview(char) {
   const artMain = document.getElementById('art-main');
   const nameEl  = document.getElementById('char-name');
   const nameJp  = document.getElementById('char-name-jp');
-  const nameEn  = document.getElementById('char-name-en');
 
   // Fade out
   nameEl.classList.remove('show');
@@ -967,8 +988,13 @@ function onDecide() {
 
   let char = CHARS[state.curIdx];
   if (char.isRandom) {
-    const pool = CHARS.filter(c=>!c.isRandom);
-    char = pool[Math.floor(Math.random()*pool.length)];
+    // ランダム解決は両者決定後にstartIntro直前で行う
+    // ここでは仮キャラとして自分自身を保持（isRandomフラグ付き）
+  } else {
+    // 相手が通常キャラ選択の場合のみ被りチェック
+    const other = ph==='p1' ? state.p2.char : state.p1.char;
+    const otherWasRandom = ph==='p2' && CHARS[state.p1.idx] && CHARS[state.p1.idx].isRandom;
+    if (!otherWasRandom && other && char.id === other.id) return;
   }
 
   state[ph].char = char;
@@ -981,35 +1007,45 @@ function onDecide() {
   flash(); playConfirm();
 
   if (ph==='p1') {
-    // P1 locked — shrink to mini, switch to P2（ランダム選択時はミニ非表示）
-    const p1selectedRandom = CHARS[state.p1.idx].isRandom;
-    if (!p1selectedRandom) lockP1toMini(char);
+    // P1 locked — switch to P2
     state.phase='p2';
-    state.curIdx = (state.p1.idx + 1) % (CHARS.length - 1); // P1の1つ右から
+    // P1と同じidでない最初のカードに飛ぶ
+    const p1char = state.p1.char;
+    let nextIdx = (state.p1.idx + 1) % (CHARS.length - 1);
+    for (let n = 0; n < CHARS.length; n++) {
+      const c = CHARS[nextIdx];
+      if (!c.isRandom && (!p1char || c.id !== p1char.id)) break;
+      nextIdx = (nextIdx + 1) % (CHARS.length - 1);
+    }
+    state.curIdx = nextIdx;
     applyCarousel(state.curIdx);
     const nextChar = CHARS[state.curIdx];
     if (!nextChar.isRandom) showPreview(nextChar);
     updatePhaseUI();
   } else {
-    // P2 locked — start intro
+    // P2 locked — ランダムを解決してからintro
     state.phase='intro';
     updatePhaseUI();
+    resolveRandom();
     setTimeout(startIntro, 400);
   }
-}
-
-function lockP1toMini(char) {
-  if (!char) return;
-  const mini = document.getElementById('ph-p1-mini');
-  const miniSlot = document.getElementById('slot-p1-mini');
-  drawPlaceholder(mini, char, false, true);
-  miniSlot.classList.add('show');
 }
 
 function updatePhaseUI() {
   const ph = state.phase;
   document.getElementById('lbl1').classList.toggle('on', ph==='p1');
   document.getElementById('lbl2').classList.toggle('on', ph==='p2');
+
+  // 相手が通常キャラを選択している場合のみグレーアウト（ランダム選択時はグレーアウトなし）
+  const otherChar = ph==='p1' ? state.p2.char : state.p1.char;
+  const otherIsRandom = ph==='p2' && state.p1.idx !== null && CHARS[state.p1.idx] && CHARS[state.p1.idx].isRandom;
+  const allCards = track.querySelectorAll('.c-card');
+  allCards.forEach((c, i) => {
+    const ch = CHARS[i];
+    const blocked = !otherIsRandom && otherChar && ch && ch.id === otherChar.id;
+    c.style.opacity = blocked ? '0.25' : '';
+    c.style.pointerEvents = blocked ? 'none' : '';
+  });
   const btn = document.getElementById('decide-btn');
   btn.classList.toggle('p2', ph==='p2');
 
@@ -1022,6 +1058,23 @@ function updatePhaseUI() {
   // Re-style active card border
   const cards = track.querySelectorAll('.c-card');
   cards.forEach((c,i) => c.classList.toggle('p2-active', i===state.curIdx && ph==='p2'));
+}
+
+/* ── ランダム解決 ── */
+function resolveRandom() {
+  const nonRandom = CHARS.filter(c => !c.isRandom);
+
+  // P1がランダムの場合
+  if (CHARS[state.p1.idx] && CHARS[state.p1.idx].isRandom) {
+    const pool = nonRandom.filter(c => !state.p2.char || state.p2.char.isRandom || c.id !== state.p2.char.id);
+    state.p1.char = pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  // P2がランダムの場合
+  if (CHARS[state.p2.idx] && CHARS[state.p2.idx].isRandom) {
+    const pool = nonRandom.filter(c => !state.p1.char || c.id !== state.p1.char.id);
+    state.p2.char = pool[Math.floor(Math.random() * pool.length)];
+  }
 }
 
 /* ── Intro sequence ── */
@@ -1093,10 +1146,6 @@ function resetAll() {
   document.getElementById('vs-badge').classList.remove('show');
 
 
-  const miniSlot=document.getElementById('slot-p1-mini');
-  miniSlot.style.transition=''; miniSlot.style.transform='';
-  miniSlot.classList.remove('show');
-
   // Reset state
   state.phase='p1'; state.p1={idx:0,char:null}; state.p2={idx:0,char:null}; state.curIdx=0;
 
@@ -1158,16 +1207,16 @@ track.addEventListener('pointerup', e => {
 });
 
 /* ── Nav arrow buttons ── */
-function navPrev() { moveTo(state.curIdx-1); }
-function navNext() { moveTo(state.curIdx+1); }
+function navPrev() { moveTo(state.curIdx-1, true, -1); }
+function navNext() { moveTo(state.curIdx+1, true, 1); }
 
 /* ── Keyboard ── */
 document.addEventListener('keydown', e => {
   const ph=state.phase;
   if (ph!=='p1' && ph!=='p2') return;
   const k = ph==='p1' ? KEYS_P1 : KEYS_P2;
-  if (e.code===k.left)  { e.preventDefault(); moveTo(state.curIdx-1); }
-  if (e.code===k.right) { e.preventDefault(); moveTo(state.curIdx+1); }
+  if (e.code===k.left)  { e.preventDefault(); moveTo(state.curIdx-1, true, -1); }
+  if (e.code===k.right) { e.preventDefault(); moveTo(state.curIdx+1, true, 1); }
   if (e.code===k.ok)    { e.preventDefault(); onDecide(); }
 });
 
@@ -1209,21 +1258,9 @@ function flash(big=false) {
   setTimeout(()=>{f.style.transition='opacity 0.25s'; f.style.opacity='0';},55);
 }
 
-/* ── Sound ── */
-let ac;
-function tone(freq,type,dur,vol){
-  try{
-    if(!ac) ac=new(window.AudioContext||window.webkitAudioContext)();
-    const o=ac.createOscillator(),g=ac.createGain();
-    o.connect(g);g.connect(ac.destination);
-    o.type=type; o.frequency.value=freq;
-    g.gain.setValueAtTime(vol,ac.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+dur);
-    o.start(); o.stop(ac.currentTime+dur);
-  }catch(e){}
-}
-function playTick()    { tone(440,'square',.05,.04); }
-function playConfirm() { tone(660,'square',.09,.1); setTimeout(()=>tone(880,'square',.12,.08),80); }
+/* ── Sound（無効化） ── */
+function playTick()    {}
+function playConfirm() {}
 
 /* ── Status Modal ── */
 let currentChar = null;
@@ -1256,7 +1293,7 @@ function closeStatus() {
 /* ── ズーム・パン ── */
 const zoomState = { scale:1, x:0, y:0, minScale:1, maxScale:5 };
 let isPanning = false, panStart = {x:0, y:0}, panOrigin = {x:0, y:0};
-let lastPinchDist = 0, lastPinchMid = {x:0, y:0};
+let lastPinchDist = 0;
 
 function getImg() { return document.getElementById('status-modal-img'); }
 
@@ -1275,19 +1312,11 @@ function resetZoom() {
   }
 }
 
-function clampPan() {
-  // 制限なし — 自由にパン可能
-}
-
 function pinchDist(t) {
   const dx = t[0].clientX - t[1].clientX;
   const dy = t[0].clientY - t[1].clientY;
   return Math.sqrt(dx*dx + dy*dy);
 }
-function pinchMid(t) {
-  return { x:(t[0].clientX+t[1].clientX)/2, y:(t[0].clientY+t[1].clientY)/2 };
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   const img = getImg();
   if (!img) return;
@@ -1297,7 +1326,6 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.85 : 1.18;
     zoomState.scale = Math.max(zoomState.minScale, Math.min(zoomState.maxScale, zoomState.scale * delta));
-    clampPan();
     applyTransform();
   }, { passive:false });
 
@@ -1314,7 +1342,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isPanning) return;
     zoomState.x = panOrigin.x + (e.clientX - panStart.x);
     zoomState.y = panOrigin.y + (e.clientY - panStart.y);
-    clampPan();
     applyTransform();
   });
   window.addEventListener('mouseup', () => {
@@ -1335,7 +1362,6 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     if (e.touches.length === 2) {
       lastPinchDist = pinchDist(e.touches);
-      lastPinchMid  = pinchMid(e.touches);
     } else if (e.touches.length === 1) {
       isPanning = true;
       panStart  = { x:e.touches[0].clientX, y:e.touches[0].clientY };
@@ -1347,53 +1373,98 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     if (e.touches.length === 2) {
       const dist = pinchDist(e.touches);
-      const mid  = pinchMid(e.touches);
       const delta = dist / lastPinchDist;
       zoomState.scale = Math.max(zoomState.minScale, Math.min(zoomState.maxScale, zoomState.scale * delta));
       lastPinchDist = dist;
-      lastPinchMid  = mid;
-      clampPan();
       applyTransform();
     } else if (e.touches.length === 1 && isPanning) {
       zoomState.x = panOrigin.x + (e.touches[0].clientX - panStart.x);
       zoomState.y = panOrigin.y + (e.touches[0].clientY - panStart.y);
-      clampPan();
       applyTransform();
     }
   }, { passive:false });
 
   img.addEventListener('touchend', e => {
-    if (e.touches.length < 2) isPanning = false;
-    // ダブルタップでリセット
-    if (e.changedTouches.length === 1) {
+    e.stopPropagation();
+    // 2本指操作終了（ピンチ終了）→ダブルタップ判定しない
+    if (e.touches.length === 0 && lastPinchDist > 0) {
+      lastPinchDist = 0;
+      isPanning = false;
+      return;
+    }
+    isPanning = false;
+    // 1本指のtouchendのみダブルタップ判定
+    if (e.changedTouches.length === 1 && e.touches.length === 0) {
       const now = Date.now();
-      if (now - lastClick < 300) resetZoom();
-      lastClick = now;
+      if (now - lastClick < 300) { resetZoom(); lastClick = 0; }
+      else lastClick = now;
     }
   });
-});
 
-// モーダル背景タップで閉じる
-document.addEventListener('DOMContentLoaded', () => {
+  // モーダル背景タップで閉じる
   document.getElementById('status-modal').addEventListener('click', e => {
     if (e.target === document.getElementById('status-modal')) closeStatus();
   });
-});
 
-document.getElementById && document.addEventListener('DOMContentLoaded', () => {
+  // 立ち絵エリア: スワイプ＋ダブルタップ/クリック
   const display = document.getElementById('char-display');
   if (display) {
+    let swipeStartX = 0, swipeStartY = 0, swipeMoved = false, lastTapTime = 0;
+    display.addEventListener('touchstart', e => {
+      if (e.touches.length !== 1) return;
+      swipeStartX = e.touches[0].clientX;
+      swipeStartY = e.touches[0].clientY;
+      swipeMoved  = false;
+    }, { passive:true });
+    display.addEventListener('touchmove', e => {
+      if (e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - swipeStartX;
+      const dy = e.touches[0].clientY - swipeStartY;
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) swipeMoved = true;
+    }, { passive:true });
     display.addEventListener('touchend', e => {
-      if (!currentChar || currentChar.isRandom) return;
-      e.preventDefault();
-      openStatus();
-    });
-    display.addEventListener('click', () => {
-      if (!currentChar || currentChar.isRandom) return;
-      openStatus();
+      if (e.changedTouches.length !== 1) return;
+      const dx = e.changedTouches[0].clientX - swipeStartX;
+      if (swipeMoved) {
+        if (Math.abs(dx) > 30) {
+          if (dx < 0) moveTo(state.curIdx + 1, true, 1);
+          else        moveTo(state.curIdx - 1, true, -1);
+        }
+        return;
+      }
+      const now = Date.now();
+      if (now - lastTapTime < 300) {
+        if (!currentChar) return;
+        openStatus();
+        lastTapTime = 0;
+      } else {
+        lastTapTime = now;
+      }
+    }, { passive:true });
+
+    // PC: ドラッグスワイプ＋ダブルクリック
+    let mouseStartX = 0, mouseMoved = false, lastClickTime = 0;
+    display.addEventListener('mousedown', e => { mouseStartX = e.clientX; mouseMoved = false; });
+    display.addEventListener('mousemove', e => { if (Math.abs(e.clientX - mouseStartX) > 8) mouseMoved = true; });
+    display.addEventListener('mouseup', e => {
+      const dx = e.clientX - mouseStartX;
+      if (mouseMoved) {
+        if (Math.abs(dx) > 30) { if (dx < 0) moveTo(state.curIdx + 1, true, 1); else moveTo(state.curIdx - 1); }
+        return;
+      }
+      const now = Date.now();
+      if (now - lastClickTime < 300) {
+        if (!currentChar) return;
+        openStatus();
+        lastClickTime = 0;
+      } else {
+        lastClickTime = now;
+      }
     });
   }
 });
+
+
 
 /* ── Preload ── */
 function preloadAll(onComplete) {
@@ -1433,7 +1504,9 @@ function preloadAll(onComplete) {
 }
 
 /* ── Init ── */
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+  await loadChars();
+  buildCarousel();
   preloadAll(() => {
     const screen = document.getElementById('preload-screen');
     screen.classList.add('fade-out');
